@@ -1,0 +1,1436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=0">
+  <title>CubeBridge</title>
+  <link rel="shortcut icon" href="./images/logo.png">
+  <link rel="stylesheet" href="../weui/2.5.1/weui.min.css">
+  <link rel="stylesheet" href="../weui/example.css">
+  <script src="../weui/weui.min.js"></script>
+  <script src="../lib/web3.min.js"></script>
+  <script src="../lib/jquery-1.8.3.min.js"></script>
+  <script src="../lib/keythereum.min.js"></script>
+  <script src="./js/define.js"></script>
+  <script src="../lib/vue.min.js"></script>
+  <script src="./js/config.js"></script>
+  <script src="./js/cube.js"></script>
+  <style>/* 控制器 */
+  .wah-controls {
+    position: fixed;
+    z-index: 100000;
+    bottom: 50px;
+    right: constant(safe-area-inset-right);
+    right: env(safe-area-inset-right);
+    display: flex;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.5);
+    color: #fff;
+    font-size: 14px;
+    border-top-left-radius: 4px;
+    border-bottom-left-radius: 4px;
+    overflow: hidden;
+  }
+  .wah-control {
+    padding: 4px;
+    display: flex;
+    align-items: center;
+  }
+
+  /* 热区蓝字 */
+  .wah-hotarea-size {
+    z-index: 99999;
+    font-size: 10px;
+    background: rgba(0, 0, 255, 0.5);
+    color: #FFF;
+  }
+
+  /* 读屏红框 */
+  .wah-reading-panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    pointer-events: none;
+  }
+  .wah-reading-outline {
+    position: absolute;
+    z-index: 99999;
+    transform: translateZ(999999px);
+    border: 2px solid rgba(255, 0, 0, 0.5);
+    background: rgba(100, 0, 0, 0.3);
+    font-size: 10px;
+    font-weight: 500;
+    line-height: 1.4;
+    color: #fff;
+    word-break: break-all;
+  }
+
+</style>
+<style>
+.weui-label {
+  max-width:6em !important;
+}
+.weui-form-preview__label {
+  margin-right:0.5em;
+}
+.nav-right_p{
+  width:70px;
+}
+.nav-title{
+  //color:#0088cc;
+}
+.info_left{
+  width:100%;
+}
+.page.navbar .weui-tab__panel .weui-tab__panel{
+  padding:0px 32px;
+}
+.info_panel .weui-form-preview{
+  padding:5px;
+}
+</style>
+</head>
+
+<body ontouchstart data-weui-theme="dark" onload="bodyOnload()">
+  <div class="container" id="app">
+    <div class="page navbar js_show" tabindex="-1" style="margin-bottom:70px">
+      <div class="page__bd" style="height: 100%;">
+        <div class="weui-tab">
+          <div class="weui-navbar">
+            <div id="logo" class="placeholder">
+		<div style="margin:15px">
+                <img src="./images/logo.png" alt="WeUI" height="40px" style="display: block;margin-left: auto;margin-right: auto;padding: 10px 0;">
+		</div>
+            </div>
+            <div role="tab" aria-selected="true" aria-controls="panel1" id="tab1" class="weui-navbar__item nav-title weui-bar__item_on" wah-hotarea="click">
+              <strong class="lang-zh">首页</strong>
+              <strong class="lang-en">Home</strong>
+            </div>
+            <div role="tab" aria-selected="true" aria-controls="panel2" id="tab2" class="weui-navbar__item nav-title" wah-hotarea="click">
+              <strong class="lang-zh">机枪池</strong>
+              <strong class="lang-en">GunPool</strong>
+            </div>
+            <div role="tab" aria-selected="true" aria-controls="panel3" id="tab3" class="weui-navbar__item nav-title" wah-hotarea="click">
+              <strong class="lang-zh">跨链桥</strong>
+              <strong class="lang-en">Bridge</strong>
+            </div>
+            <div role="tab" aria-selected="true" aria-controls="panel4" id="tab4" class="weui-navbar__item nav-title" wah-hotarea="click">
+              <strong class="lang-zh">挖矿池</strong>
+              <strong class="lang-en">MiningPool</strong>
+            </div>
+            <div role="tab" aria-selected="true" aria-controls="panel5" id="tab5" class="weui-navbar__item nav-title" wah-hotarea="click">
+              <strong class="lang-zh">董事会</strong>
+              <strong class="lang-en">BoardRoom</strong>
+            </div>
+            <div role="tab" aria-selected="true" aria-controls="panel6" id="tab6" class="weui-navbar__item nav-title" wah-hotarea="click">
+              <strong class="lang-zh">信息</strong>
+              <strong class="lang-en">Info</strong>
+            </div>
+            <div role="tab" id="tab4" class="" wah-hotarea="click">
+              <div id="wallet" >
+                <div v-if="account == null">
+                  <a href="javascript:connectWallet();" role="button" class="weui-btn weui-btn_mini weui-btn_default lang-zh">
+		    <p class="nav-right_p">钱包</p>
+		  </a>
+                  <a href="javascript:connectWallet();" role="button" class="weui-btn weui-btn_mini weui-btn_default lang-en">
+		    <p class="nav-right_p">Wallet</p>
+		  </a>
+                </div>
+                <div v-if="account != null">
+                  <a href="javascript:connectWallet();" role="button" class="weui-btn weui-btn_mini weui-btn_default">
+                    <p style="width:70px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{account}}</p>
+                  </a>
+                </div>
+              </div>
+              <div id="more">
+                <a id="btn_En" href="javascript:setEnglish()" role="button" class="weui-btn weui-btn_mini weui-btn_default lang-zh">
+		    <p class="nav-right_p">English</p>
+		</a>
+                <a id="btn_Zh" href="javascript:setChinese()" role="button" class="weui-btn weui-btn_mini weui-btn_default lang-en">
+		    <p class="nav-right_p">中文</p>
+		</a>
+              </div>
+              <div >
+                <a href="javascript:setBackground()" role="button" class="weui-btn weui-btn_mini weui-btn_default lang-en">
+		    <p class="nav-right_p">light/dark</p>
+		</a>
+                <a href="javascript:setBackground()" role="button" class="weui-btn weui-btn_mini weui-btn_default lang-zh">
+		    <p class="nav-right_p">亮/暗</p>
+		</a>
+              </div>
+            </div>
+          </div>
+          <!-- Home -->
+          <div role="tabpanel" id="panel1" aria-labelledby="tab1" class="weui-tab__panel" style="display: block;">
+            <div class="weui-panel__bd">
+              <div role="option" class="weui-media-box weui-media-box_text">
+                <strong class="weui-media-box__title lang-zh">总锁仓</strong>
+                <strong class="weui-media-box__title lang-en">Total Value Locked</strong>
+                <p class="weui-media-box__title">{{tvl}}</p>
+              </div>
+              <div role="option" class="weui-media-box weui-media-box_text">
+                <strong class="weui-media-box__title lang-zh">机枪池累计收益</strong>
+                <strong class="weui-media-box__title lang-en">Gun pool cumulative income</strong>
+                <p class="weui-media-box__title">{{0}}</p>
+              </div>
+              <div role="option" class="weui-media-box weui-media-box_text">
+                <strong class="weui-media-box__title lang-zh">跨链桥累计收益</strong>
+                <strong class="weui-media-box__title lang-en">Bridge cumulative income</strong>
+                <p class="weui-media-box__title">{{0}}</p>
+              </div>
+              <div role="option" class="weui-media-box weui-media-box_text">
+                <strong class="weui-media-box__title lang-zh">平台币流通总量</strong>
+                <strong class="weui-media-box__title lang-en">CubeBridge Token in circulation</strong>
+                <p class="weui-media-box__title">{{toNumber(cbt_in_circulation,18)}}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- GunPool -->
+          <div style="display: none;" role="tabpanel" id="panel2" aria-labelledby="tab2" class="weui-tab__panel">
+            <div class="weui-navbar">
+              <div v-for="(chain,index) in activeChains" role="tab" aria-selected="false" v-bind:aria-controls="'gunlist'+index" v-bind:id="'guntab'+index" wah-hotarea="click" class="weui-navbar__item gunpool-tab" v-bind:chain="chain">
+                <div class="placeholder"><img width="20" :src="'./images/chain_logo/'+chain+'.png'" class="weui-cell__hd" alt="">{{' '+chains_params[chain]["chainName"]}}</div>
+              </div>
+              <script type="text/javascript" class="navbar js_show">
+                $(function(){
+                  $('.gunpool-tab').on('click', function () {
+                    $(this).attr('aria-selected','true').addClass('weui-bar__item_on');
+                    $(this).siblings('.weui-bar__item_on').removeClass('weui-bar__item_on').attr('aria-selected','false');
+                    var panelId = '#' + $(this).attr('aria-controls');
+                    app.gun_selected_chain = $(this).attr('chain');
+                    console.log("selected chain "+app.gun_selected_chain);
+                    updateGunPool(app.gun_selected_chain);
+                  });
+                });
+              </script>
+            </div>
+            <div class="weui-panel__bd">
+              <div v-for="(pool,index) in gun_pool" aria-labelledby="js_p1m1_bd" class="weui-media-box weui-media-box_appmsg">
+                <div aria-hidden="true" class="weui-media-box__hd">
+                  <img class="weui-media-box__thumb" :src="'./images/token_logo/'+gun_selected_chain+'_'+pool.symbol+'.png'" alt="">
+                </div>
+                <div aria-hidden="true" id="js_p1m1_bd" class="weui-media-box__bd">
+                  <strong class="weui-media-box__title">{{pool.symbol}} ( {{gun_pool_infos[index]!=undefined?gun_pool_infos[index].name:""}} ) </strong>
+                  <div class="weui-media-box__desc">
+                    <div id="p1" class="weui-form-preview__item">
+                      <label class="weui-form-preview__label lang-en">TVL</label>
+                      <label class="weui-form-preview__label lang-zh">总锁仓</label>
+                      <span class="weui-form-preview__value">{{toNumber(pool.equity,pool.token_decimals)}}</span>
+                    </div>
+                    <div id="p2" class="weui-form-preview__item">
+                      <label class="weui-form-preview__label lang-en">APY</label>
+                      <label class="weui-form-preview__label lang-zh">年化收益</label>
+                      <span class="weui-form-preview__value">{{pool.apy/100}}%</span>
+                    </div>
+                  </div>
+                  <ul class="weui-media-box__info" aria-hidden="true" style="display:none">
+                    <li class="weui-media-box__info__meta" aria-hidden="true" id="js_p4m1_source">文字来源</li>
+                    <li class="weui-media-box__info__meta" aria-hidden="true" id="js_p4m1_time">时间</li>
+                    <li class="weui-media-box__info__meta weui-media-box__info__meta_extra" aria-hidden="true" id="js_p4m1_extra">其它信息</li>
+                    <li class="weui-media-box__info__meta weui-media-box__info__meta_extra" aria-hidden="true" id="js_p4m1_extra">其它信息</li>
+                  </ul>
+                </div>
+                <div aria-hidden="true" class="weui-media-box__ft" width="300px">
+                  <div class="button-sp-area lang-zh">
+                    <a :href="'javascript:onClickShowAmountDialog('+index+')'" role="button" class="weui-btn weui-btn_mini weui-btn_primary weui-wa-hotarea " wah-hotarea="click">存款</a>
+                    <a :href="'javascript:onClickShowLiquidityDialog('+index+')'" role="button" class="weui-btn weui-btn_mini weui-btn_primary weui-wa-hotarea ">取款</a>
+                  </div>
+                  <div class="button-sp-area lang-en">
+                    <a :href="'javascript:onClickShowAmountDialog('+index+')'" role="button" class="weui-btn weui-btn_mini weui-btn_primary weui-wa-hotarea " wah-hotarea="click">Deposit</a>
+                    <div style="margin:3px"></div>
+                    <a :href="'javascript:onClickShowLiquidityDialog('+index+')'" role="button" class="weui-btn weui-btn_mini weui-btn_primary weui-wa-hotarea ">Withdraw</a>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div> <!-- GunPool -->
+
+          <!-- Bridge -->
+          <div style="display: none;" role="tabpanel" id="panel3" aria-labelledby="tab3" class="weui-tab__panel">
+            <div class="weui-form" style="padding:0px">
+
+              <div class="weui-form__control-area" style="margin:0px">
+                <div class="weui-cells__group weui-cells__group_form">
+
+                  <div class="weui-cells weui-cells_form">
+                    <div class="weui-cell weui-cell_active weui-cell_select weui-cell_select-after">
+                      <div class="weui-cell__hd">
+                        <label class="weui-label lang-zh">源链</label>
+                        <label class="weui-label lang-en">FromChain</label>
+                      </div>
+                      <div class="weui-cell__bd">
+                        <select class="weui-select " name="bridge_select_from_chain" id="bridge_select_from_chain" v-model="bridge_from_chain">
+                          <option disabled selected value="" >...</option>
+                          <option v-for="(chainId,index) in activeChains" :value="chainId">{{chains_params[chainId].chainName}}</option>
+                        </select>
+                      </div>
+		      <div class="weui-cell__ft"> <i class="weui-icon-warn"></i> </div>
+                    </div>
+                    <div class="weui-cell weui-cell_active weui-cell_select weui-cell_select-after">
+                      <div class="weui-cell__hd">
+                        <label class="weui-label lang-zh">代币</label>
+                        <label class="weui-label lang-en">Token</label>
+                      </div>
+                      <div class="weui-cell__bd">
+                        <select class="weui-select bridge_from_select bridge_from_to" name="select_token" id="bridge_select_token" v-model="bridge_selected_pool">
+                          <option disabled selected value="" >...</option>
+                          <option v-for="(pool,index) in bridge_pool" :value="pool">{{pool.symbol}}</option>
+                        </select>
+                      </div>
+		      <div class="weui-cell__ft"> <i class="weui-icon-warn"></i> </div>
+                    </div>
+                    <div class="weui-cell weui-cell_active weui-cell_select weui-cell_select-after">
+                      <div class="weui-cell__hd">
+                        <label class="weui-label lang-zh">目标链</label>
+                        <label class="weui-label lang-en">TargetChain</label>
+                      </div>
+                      <div class="weui-cell__bd">
+                        <select class="weui-select bridge_from_to" name="bridge_select_to_chain" id="bridge_select_to_chain" v-model="bridge_to_chain">
+                          <option disabled selected value="" >...</option>
+                          <option v-for="(chainId,index) in activeChains" :value="chainId" v-if="chainId != bridge_from_chain">{{chains_params[chainId].chainName}}</option>
+                        </select>
+                      </div>
+		      <div class="weui-cell__ft"> <i class="weui-icon-warn"></i> </div>
+                    </div>
+                    <label class="weui-cell weui-cell_active" :title="isZh?'为保证安全，默认目标地址与源地址相同.':'For security reasons, the default destination address is the same as the source address.'">
+                      <div class="weui-cell__hd">
+                        <span class="weui-label lang-zh">目标地址</span>
+                        <span class="weui-label lang-en">TargetAddress</span>
+                      </div>
+                      <div class="weui-cell__bd">
+                        <input id="js_bridge_to_address" class="weui-input" type="text" pattern="0x[0-9a-fA-F]*" :value="bridge_to_address" readonly>
+                      </div>
+		      <div class="weui-cell__ft">
+			<a class="weui-btn weui-btn_mini weui-btn_default" href="javascript:onCustomAddress()">{{isZh?'自定义地址':'Custom address'}}</a>
+		      </div>
+                    </label>
+                    <label class="weui-cell weui-cell_active weui-cell_switch">
+                      <div class="weui-cell__hd " id="cb_txt" aria-hidden="true">{{isZh?'跨链兑换矿工费':'Swap for gas'}}</div>
+                      <div class="weui-cell__bd">
+                        <input aria-labelledby="cb_txt" id="js_bridge_swap_for_gas" class="weui-switch bridge_from_select" type="checkbox" v-model="bridge_swap_for_gas">
+                      </div>
+                    </label>
+                    <label class="weui-cell weui-cell_active weui-cell_switch">
+                      <div class="weui-cell__hd " id="cb_txt" aria-hidden="true">{{isZh?'存款凭证跨链':'isLiquidity'}}</div>
+                      <div class="weui-cell__bd">
+                        <input aria-labelledby="cb_txt" id="js_bridge_is_liquidity" class="weui-switch bridge_from_select" type="checkbox" v-model="bridge_is_liquidity">
+                      </div>
+                    </label>
+                    <label class="weui-cell weui-cell_active">
+                      <div class="weui-cell__hd">
+                        <span class="weui-label lang-zh">数量</span>
+                        <span class="weui-label lang-en">Amount</span>
+                      </div>
+                      <div class="weui-cell__bd">
+                        <input id="js_bridge_amount" class="weui-input" :placeholder="isZh?'请输入数量':'Please input amount'" type="number" :min="bridge_gas_fee" :max="bridge_is_liquidity?(bridge_pool.length > 0?toNumber(bridge_selected_token_balance,bridge_selected_pool.liquidity_decimals):0):(bridge_pool.length > 0?toNumber(bridge_selected_token_balance,bridge_selected_pool.token_decimals):0)" step="0.000001" pattern="[.0-9]*">
+                      </div>
+		      <div class="weui-cell__ft"> <i class="weui-icon-warn"></i> </div>
+                    </label>
+		    <div v-if="!bridge_swap_for_gas" class="weui-cells__title weui-cell_warn">
+			{{isZh?'如果超过限额仅可跨链提取为机枪池流动性代币':'If exceeding the limit can only be withdrawn as gunpool liquidity tokens across the chain.'}}
+		    </div>
+                    <div v-if="(!bridge_is_liquidity || bridge_selected_pool.symbol == 'TCT')" class="weui-cells__title" style="text-align: left;">{{isZh?'代币余额:&nbsp;&nbsp;':'Token Balance:&nbsp;&nbsp;'}}<span class="db_s" db_t="js_bridge_amount">{{bridge_pool.length > 0?toNumber(bridge_selected_token_balance,bridge_selected_pool.token_decimals):0}}</span></div>
+                    <div v-if="(bridge_is_liquidity && bridge_selected_pool.symbol != 'TCT')" class="weui-cells__title" style="text-align: left;">{{isZh?'凭证余额:&nbsp;&nbsp;':'Liquidity Balance:&nbsp;&nbsp;'}}<span class="db_s" db_t="js_bridge_amount">{{bridge_pool.length > 0?toNumber(bridge_selected_token_balance,bridge_selected_pool.liquidity_decimals):0}}</span></div>
+		    <div v-if="!bridge_swap_for_gas">
+			<div class="weui-cells__title">
+			    {{isZh?'跨链可提取限额:&nbsp;':'Cross withdraw limit:&nbsp;'}}
+			    {{bridge_cross_limit}}&nbsp;{{bridge_selected_pool.symbol}}
+			</div>
+			<div class="weui-cells__title">
+			    {{isZh?'目标链矿工费:&nbsp;':'Target chain gas fee:&nbsp;'}}
+			    {{bridge_gas_fee}}&nbsp;{{bridge_selected_pool.symbol}}
+			</div>
+		    </div>
+		    <div v-if="bridge_swap_for_gas">
+			<div class="weui-cells__title">
+			    {{isZh?'跨链可兑换限额:&nbsp;':'Swap for gas limit:&nbsp;'}}
+			    {{bridge_cross_limit}}&nbsp;{{bridge_selected_pool.symbol}}
+			</div>
+			<div class="weui-cells__title">
+			    {{isZh?'目标链矿工费:&nbsp;':'Target chain gas fee:&nbsp;'}}
+			    {{bridge_gas_fee}}&nbsp;{{bridge_selected_pool.symbol}}
+			</div>
+		    </div>
+
+                  </div>
+                </div>
+              </div>
+              <div class="weui-form__tips-area">
+                <p class="weui-form__tips">
+                </p>
+              </div>
+              <div class="weui-form__opr-area lang-zh">
+                <a role="button" class="weui-btn weui-btn_primary " href="javascript:bridgeSubmit()" id="showTooltips" wah-hotarea="click">提交</a>
+              </div>
+              <div class="weui-form__opr-area lang-en">
+                <a role="button" class="weui-btn weui-btn_primary " href="javascript:bridgeSubmit()" id="showTooltips" wah-hotarea="click">Submit</a>
+              </div>
+              <div class="weui-form__extra-area">
+                <div class="weui-footer">
+		  <div class="weui-form__tips-area">
+		    <p class="weui-form__tips">
+		      {{isZh?'选择源链和代币并打开历史记录进行下一步跨链提取':'Select from chain and token then open history detail to next operation'}}
+		    </p>
+		  </div>
+                  <p class="weui-footer__links lang-zh">
+                    <a href="javascript:showHistory()" role="button" class="weui-btn weui-btn_default weui-footer__link " wah-hotarea="click">历史记录</a>
+                  </p>
+                  <p class="weui-footer__links lang-en">
+                    <a href="javascript:showHistory()" role="button" class="weui-btn weui-btn_default weui-footer__link " wah-hotarea="click">History</a>
+                  </p>
+                </div>
+
+
+              </div>
+            </div>
+
+          </div>
+
+
+	  <!-- mining -->
+          <div style="display: none;" role="tabpanel" id="panel4" aria-labelledby="tab4" class="weui-tab__panel">
+	    <div class="weui-navbar">
+              <div v-for="(chain,index) in activeChains" role="tab" aria-selected="false" v-bind:aria-controls="'mininglist'+index" v-bind:id="'miningtab'+index" wah-hotarea="click" class="weui-navbar__item miningpool-tab" v-bind:chain="chain">
+                <div class="placeholder"><img width="20" :src="'./images/chain_logo/'+chain+'.png'" class="weui-cell__hd" alt="">{{' '+chains_params[chain]["chainName"]}}</div>
+              </div>
+              <script type="text/javascript" class="navbar js_show">
+                $(function(){
+                  $('.miningpool-tab').on('click', function () {
+                    $(this).attr('aria-selected','true').addClass('weui-bar__item_on');
+                    $(this).siblings('.weui-bar__item_on').removeClass('weui-bar__item_on').attr('aria-selected','false');
+                    var panelId = '#' + $(this).attr('aria-controls');
+                    app.mining_selected_chain = $(this).attr('chain');
+                    console.log("selected chain "+app.mining_selected_chain);
+                    updateMiningPool(app.mining_selected_chain);
+                  });
+                });
+              </script>
+            </div>
+
+            <div class="weui-panel__bd">
+	      <div aria-labelledby="js_p1m1_bd" class="weui-media-box weui-media-box_appmsg">
+                <div aria-hidden="true" class="weui-media-box__hd">
+                  <img class="weui-media-box__thumb" :src="'./images/logo.png'" alt="">
+		</div>
+                <div aria-hidden="true" class="weui-media-box__bd">
+                  <strong class="weui-media-box__title">CBT ( CubeBridge Token )</strong>
+                  <div class="weui-media-box__desc">
+                    <div class="weui-form-preview__item">
+                      <label class="weui-form-preview__label lang-en">PendingAll</label>
+                      <label class="weui-form-preview__label lang-zh">待提取总量</label>
+                      <span class="weui-form-preview__value">{{toNumber(mining_pending_all,contracts[mining_selected_chain].CubeToken.decimals)}}</span>
+                    </div>
+		  </div>
+		</div>
+		<div aria-hidden="true" class="weui-media-box__ft" width="300px">
+                  <div class="button-sp-area lang-zh">
+                    <a href="javascript:onMiningClaimAll()" role="button" class="weui-btn weui-btn_mini weui-btn_primary weui-wa-hotarea " wah-hotarea="click">提取所有收益</a>
+		  </div>
+                  <div class="button-sp-area lang-en">
+                    <a href="javascript:onMiningClaimAll()" role="button" class="weui-btn weui-btn_mini weui-btn_primary weui-wa-hotarea " wah-hotarea="click">ClaimAll</a>
+		  </div>
+		</div>
+	      </div>
+
+	      <div v-for="(pool,index) in mining_pool" aria-labelledby="js_p1m1_bd" class="weui-media-box weui-media-box_appmsg" :style="mining_display(pool.lpToken)">
+                <div aria-hidden="true" class="weui-media-box__hd">
+                  <img class="weui-media-box__thumb" :src="'./images/token_logo/'+mining_selected_chain+'_'+pool.lpName+'.png'" :alt="pool.lpName">
+                </div>
+                <div aria-hidden="true" id="js_p1m1_bd" class="weui-media-box__bd">
+                  <strong class="weui-media-box__title">{{pool.lpName}} ( {{mining_pool_infos[index]!=undefined?mining_pool_infos[index].name:""}} ) </strong>
+                  <div class="weui-media-box__desc">
+                    <div class="weui-form-preview__item">
+                      <label class="weui-form-preview__label lang-en">TVL</label>
+                      <label class="weui-form-preview__label lang-zh">总质押</label>
+                      <span class="weui-form-preview__value">{{mining_pool_infos[index]!=undefined?toNumber(mining_pool_infos[index].tvl,mining_pool_infos[index].tvl_decimals):0}}</span>
+                    </div>
+                    <div class="weui-form-preview__item">
+                      <label class="weui-form-preview__label lang-en">MVL</label>
+                      <label class="weui-form-preview__label lang-zh">我的质押</label>
+                      <span class="weui-form-preview__value">{{mining_pool_infos[index]!=undefined?toNumber(mining_pool_infos[index].userInfo.amount,mining_pool_infos[index].tvl_decimals):0}}</span>
+                    </div>
+                    <div class="weui-form-preview__item">
+                      <label class="weui-form-preview__label lang-en">Mining Rate</label>
+                      <label class="weui-form-preview__label lang-zh">挖矿速度</label>
+                      <span class="weui-form-preview__value">{{miningRate(mining_selected_chain,pool.allocPoint)}}{{isZh?" CBT每区块":" CBT per block"}}<span>
+                    </div> 
+                    <div class="weui-form-preview__item">
+                      <label class="weui-form-preview__label lang-en">Pending</label>
+                      <label class="weui-form-preview__label lang-zh">待提取</label>
+                      <span class="weui-form-preview__value">{{mining_pool_infos[index]!=undefined?toNumber(mining_pool_infos[index].pending,contracts[parseInt(mining_selected_chain)].CubeToken.decimals):0}}</span>
+                    </div>
+                  </div>
+                  <ul class="weui-media-box__info" aria-hidden="true" style="display:none">
+                    <li class="weui-media-box__info__meta" aria-hidden="true" id="js_p4m1_source">文字来源</li>
+                    <li class="weui-media-box__info__meta" aria-hidden="true" id="js_p4m1_time">时间</li>
+                    <li class="weui-media-box__info__meta weui-media-box__info__meta_extra" aria-hidden="true" id="js_p4m1_extra">其它信息</li>
+                    <li class="weui-media-box__info__meta weui-media-box__info__meta_extra" aria-hidden="true" id="js_p4m1_extra">其它信息</li>
+                  </ul>
+                </div>
+                <div aria-hidden="true" class="weui-media-box__ft" width="300px">
+                  <div class="button-sp-area lang-zh">
+                    <a :href="'javascript:onShowMiningDepositDialog('+index+')'" role="button" class="weui-btn weui-btn_mini weui-btn_primary weui-wa-hotarea " wah-hotarea="click">质押</a>
+                    <a :href="'javascript:onShowMiningWithdrawDialog('+index+')'" role="button" class="weui-btn weui-btn_mini weui-btn_primary weui-wa-hotarea ">解押</a>
+                    <div style="margin:3px"></div>
+                    <a :href="'javascript:onMiningClaim('+index+')'" role="button" class="weui-btn weui-btn_mini weui-btn_primary weui-wa-hotarea ">提取收益</a>
+                  </div>
+                  <div class="button-sp-area lang-en">
+                    <a :href="'javascript:onShowMiningDepositDialog('+index+')'" role="button" class="weui-btn weui-btn_mini weui-btn_primary weui-wa-hotarea " wah-hotarea="click">Deposit</a>
+                    <div style="margin:3px"></div>
+                    <a :href="'javascript:onShowMiningWithdrawDialog('+index+')'" role="button" class="weui-btn weui-btn_mini weui-btn_primary weui-wa-hotarea ">Withdraw</a>
+                    <div style="margin:3px"></div>
+                    <a :href="'javascript:onMiningClaim('+index+')'" role="button" class="weui-btn weui-btn_mini weui-btn_primary weui-wa-hotarea ">Claim</a>
+                  </div>
+                </div>
+              </div>
+
+
+	    </div>
+
+          </div>
+
+
+	    <!-- boardroom -->
+          <div style="display: none;" role="tabpanel" id="panel5" aria-labelledby="tab5" class="weui-tab__panel">
+            <div class="weui-navbar">
+              <div v-for="(chain,index) in activeChains" role="tab" aria-selected="false" v-bind:aria-controls="'boardlist'+index" v-bind:id="'boardtab'+index" wah-hotarea="click" class="weui-navbar__item boardpool-tab" v-bind:chain="chain">
+                <div class="placeholder"><img width="20" :src="'./images/chain_logo/'+chain+'.png'" class="weui-cell__hd" alt="">{{' '+chains_params[chain]["chainName"]}}</div>
+              </div>
+              <script type="text/javascript" class="navbar js_show">
+                $(function(){
+                  $('.boardpool-tab').on('click', function () {
+                    $(this).attr('aria-selected','true').addClass('weui-bar__item_on');
+                    $(this).siblings('.weui-bar__item_on').removeClass('weui-bar__item_on').attr('aria-selected','false');
+                    var panelId = '#' + $(this).attr('aria-controls');
+                    app.board_selected_chain = $(this).attr('chain');
+                    console.log("selected chain "+app.board_selected_chain);
+                    updateBoardPool(app.board_selected_chain);
+                  });
+                });
+              </script>
+            </div>
+            <div class="weui-panel__bd">
+	      <div aria-labelledby="js_p1m1_bd" class="weui-media-box weui-media-box_appmsg">
+                <div aria-hidden="true" class="weui-media-box__hd">
+                  <img class="weui-media-box__thumb" :src="'./images/logo.png'" alt="">
+		</div>
+                <div aria-hidden="true" class="weui-media-box__bd">
+                  <strong class="weui-media-box__title">CBT ( CubeBridge Token )</strong>
+                  <div class="weui-media-box__desc">
+                    <div class="weui-form-preview__item">
+                      <label class="weui-form-preview__label lang-en">TVL</label>
+                      <label class="weui-form-preview__label lang-zh">总质押量</label>
+                      <span class="weui-form-preview__value">{{toNumber(board_total_amount,contracts[board_selected_chain].CubeToken.decimals)}}&nbsp;CBT</span>
+                    </div>
+                    <div class="weui-form-preview__item">
+                      <label class="weui-form-preview__label lang-en">MVL</label>
+                      <label class="weui-form-preview__label lang-zh">我的质押</label>
+                      <span class="weui-form-preview__value">{{toNumber(board_user_amount,contracts[board_selected_chain].CubeToken.decimals)}}&nbsp;CBT</span>
+                    </div>
+		  </div>
+		</div>
+		<div aria-hidden="true" class="weui-media-box__ft" width="300px">
+		  <div class="button-sp-area lang-zh">
+                    <a href="javascript:onShowBoardDepositDialog()" role="button" class="weui-btn weui-btn_mini weui-btn_primary weui-wa-hotarea " wah-hotarea="click">质押</a>
+                    <a href="javascript:onShowBoardWithdrawDialog()" role="button" class="weui-btn weui-btn_mini weui-btn_primary weui-wa-hotarea " wah-hotarea="click">解押</a>
+		    <div style="margin:3px"></div>
+                    <a href="javascript:onBoardClaim()" role="button" class="weui-btn weui-btn_mini weui-btn_primary weui-wa-hotarea " wah-hotarea="click">提取收益</a>
+		  </div>
+                  <div class="button-sp-area lang-en">
+                    <a href="javascript:onShowBoardDepositDialog()" role="button" class="weui-btn weui-btn_mini weui-btn_primary weui-wa-hotarea " wah-hotarea="click">Deposit</a>
+		    <div style="margin:3px"></div>
+                    <a href="javascript:onShowBoardWithdrawDialog()" role="button" class="weui-btn weui-btn_mini weui-btn_primary weui-wa-hotarea " wah-hotarea="click">Withdraw</a>
+		    <div style="margin:3px"></div>
+                    <a href="javascript:onBoardClaim()" role="button" class="weui-btn weui-btn_mini weui-btn_primary weui-wa-hotarea " wah-hotarea="click">Claim</a>
+		  </div>
+		</div>
+	      </div>
+              <div v-for="(pool,index) in board_pool" aria-labelledby="js_p1m1_bd" class="weui-media-box weui-media-box_appmsg">
+                <div aria-hidden="true" class="weui-media-box__hd">
+                  <img class="weui-media-box__thumb" :src="'./images/token_logo/'+board_selected_chain+'_'+pool.symbol+'.png'" alt="">
+                </div>
+                <div aria-hidden="true" id="js_p1m1_bd" class="weui-media-box__bd">
+                  <strong class="weui-media-box__title">{{pool.symbol}} </strong>
+                  <div class="weui-media-box__desc">
+                    <div id="p1" class="weui-form-preview__item">
+                      <label class="weui-form-preview__label lang-en">Total dividend</label>
+                      <label class="weui-form-preview__label lang-zh">总发放量</label>
+                      <span class="weui-form-preview__value">{{toNumber(pool.totalReward,pool.decimals)}}</span>
+                    </div>
+                    <div id="p1" class="weui-form-preview__item">
+                      <label class="weui-form-preview__label lang-en">Dividend past 30 days</label>
+                      <label class="weui-form-preview__label lang-zh">近30天发放量</label>
+                      <span class="weui-form-preview__value">{{toNumber(pool.monthReward,pool.decimals)}}</span>
+                    </div>
+                    <div id="p1" class="weui-form-preview__item">
+                      <label class="weui-form-preview__label lang-en">Dividend past 24 hours</label>
+                      <label class="weui-form-preview__label lang-zh">近24小时发放量</label>
+                      <span class="weui-form-preview__value">{{toNumber(pool.dayReward,pool.decimals)}}</span>
+                    </div>
+                    <div id="p1" class="weui-form-preview__item">
+                      <label class="weui-form-preview__label lang-en">My Pending Reward</label>
+                      <label class="weui-form-preview__label lang-zh">我的待提取量</label>
+                      <span class="weui-form-preview__value">{{toNumber(pool.pendingReward,pool.decimals)}}</span>
+                    </div>
+                  </div>
+                  <ul class="weui-media-box__info" aria-hidden="true" style="display:none">
+                    <li class="weui-media-box__info__meta" aria-hidden="true" id="js_p4m1_source">文字来源</li>
+                    <li class="weui-media-box__info__meta" aria-hidden="true" id="js_p4m1_time">时间</li>
+                    <li class="weui-media-box__info__meta weui-media-box__info__meta_extra" aria-hidden="true" id="js_p4m1_extra">其它信息</li>
+                    <li class="weui-media-box__info__meta weui-media-box__info__meta_extra" aria-hidden="true" id="js_p4m1_extra">其它信息</li>
+                  </ul>
+                </div>
+                <div aria-hidden="true" class="weui-media-box__ft" width="300px" style="display:none">
+                  <div class="button-sp-area">
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+          </div> <!-- boardroom -->
+
+
+	  <!-- infos -->
+          <div style="display: none;" role="tabpanel" id="panel6" aria-labelledby="tab6" class="weui-tab__panel">
+	    <div class="weui-flex">
+	      <div class="placeholder">
+		<a href="javascript:" role="button" class="weui-btn weui-btn_mini weui-btn_default info_left" aria-controls="info_addr">
+		    {{isZh?'合约地址':'Contracts'}}
+		</a>
+		<br>
+		<a href="javascript:updateInfoKeyparams()" role="button" class="weui-btn weui-btn_mini weui-btn_default info_left weui-btn_disabled" aria-controls="info_keyparams">
+		    {{isZh?'关键参数':'Key parameters'}}
+		</a>
+		<br>
+		<a href="javascript:updateInfoStatics()" role="button" class="weui-btn weui-btn_mini weui-btn_default info_left weui-btn_disabled" aria-controls="info_statics">
+		    {{isZh?'统计数据':'Statistics'}}
+		</a>
+		<br>
+		<a href="javascript:" role="button" class="weui-btn weui-btn_mini weui-btn_default info_left weui-btn_disabled" aria-controls="info_guide">
+		    {{isZh?'操作指南':'Guide'}}
+		</a>
+		<br>
+		<a href="javascript:" role="button" class="weui-btn weui-btn_mini weui-btn_default info_left weui-btn_disabled" aria-controls="info_faq">
+		    {{isZh?'常见问题':'FAQ'}}
+		</a>
+	      </div>
+	      <div class="weui-flex__item">
+		<!-- info_addr -->
+		<div class="weui-tab__panel info_panel js_show" id="info_addr">
+		    <div class="weui-panel__bd">
+		      <div class="weui-form-preview">
+			<div class="weui-media-box__bd">
+			    <strong class="weui-media-box__title">CBT ( CubeBridge Token )</strong>
+			    <div class="weui-media-box__desc">
+				<div v-for="chainId in activeChains" class="weui-form-preview__item">
+				    <label class="weui-form-preview__label">{{chains_params[chainId].chainName}}</label>
+				    <span class="weui-form-preview__value">{{contracts[chainId].CubeToken.addr}}</span>
+				</div>
+			    </div>
+			</div>
+
+			<hr>
+			<div v-for="chainId in activeChains" class="weui-media-box__bd">
+			    <strong class="weui-media-box__title">{{chains_params[chainId].chainName}}</strong>
+			    <div v-for="pool in pools[chainId]" class="weui-media-box__desc">
+				<div class="weui-form-preview__item">
+				    <label class="weui-form-preview__label">{{pool.symbol}}</label>
+				    <span class="weui-form-preview__value">{{pool.token}}</span>
+				</div>
+				<div class="weui-form-preview__item">
+				    <label class="weui-form-preview__label">c{{pool.symbol}}</label>
+				    <span class="weui-form-preview__value">{{pool.liquidity_token}}</span>
+				</div>
+			    </div>
+			</div>
+
+			<hr>
+			<div class="weui-media-box__bd">
+			    <strong class="weui-media-box__title">CubeBridge Router</strong>
+			    <div class="weui-media-box__desc">
+				<div v-for="chainId in activeChains" class="weui-form-preview__item">
+				    <label class="weui-form-preview__label">{{chains_params[chainId].chainName}}</label>
+				    <span class="weui-form-preview__value">{{contracts[chainId].CubeRouter.addr}}</span>
+				</div>
+			    </div>
+			</div>
+
+			<hr>
+			<div class="weui-media-box__bd">
+			    <strong class="weui-media-box__title">CubeBridge Mining</strong>
+			    <div class="weui-media-box__desc">
+				<div v-for="chainId in activeChains" class="weui-form-preview__item">
+				    <label class="weui-form-preview__label">{{chains_params[chainId].chainName}}</label>
+				    <span class="weui-form-preview__value">{{contracts[chainId].Airdrop.addr}}</span>
+				</div>
+			    </div>
+			</div>
+
+			<hr>
+			<div class="weui-media-box__bd">
+			    <strong class="weui-media-box__title">CubeBridge BoardRoom</strong>
+			    <div class="weui-media-box__desc">
+				<div v-for="chainId in activeChains" class="weui-form-preview__item">
+				    <label class="weui-form-preview__label">{{chains_params[chainId].chainName}}</label>
+				    <span class="weui-form-preview__value">{{contracts[chainId].BoardRoom.addr}}</span>
+				</div>
+			    </div>
+			</div>
+			<hr>
+
+
+
+		      </div>
+		    </div>
+		    <div class="weui-panel__ft"></div>
+		</div> <!-- info_addr -->
+
+		<!-- info_keyparams -->
+		<div class="weui-tab__panel info_panel js_show" id="info_keyparams" style="display:none">
+		    <div class="weui-panel__bd">
+		      <div class="weui-form-preview">
+
+			<div class="weui-media-box__bd">
+			    <strong class="weui-media-box__title">{{isZh?'跨链桥费率':'Bridge fee rate'}}</strong>
+			    <div class="weui-media-box__desc">
+				<div v-for="chainId in activeChains" class="weui-form-preview__item">
+				    <label class="weui-form-preview__label">{{chains_params[chainId].chainName}}</label>
+				    <span class="weui-form-preview__value">{{info_key_params[chainId]!=undefined?info_key_params[chainId].brdige_fee:undefined}}</span>
+				</div>
+			    </div>
+			</div>
+			<hr>
+			<div class="weui-media-box__bd">
+			    <strong class="weui-media-box__title">{{isZh?'机枪池收益再分配（转移到董事会）比例':'Gunpool redistribution (transfer to boardroom) rate'}}</strong>
+			    <div class="weui-media-box__desc">
+				<div v-for="chainId in activeChains" class="weui-form-preview__item">
+				    <label class="weui-form-preview__label">{{chains_params[chainId].chainName}}</label>
+				    <span class="weui-form-preview__value">{{info_key_params[chainId]!=undefined?info_key_params[chainId].gun_fee_rate:undefined}}</span>
+				</div>
+			    </div>
+			</div>
+			<hr>
+			<div class="weui-media-box__bd">
+			    <strong class="weui-media-box__title">{{isZh?'跨链桥收益再分配（转移到董事会）比例':'Bridge redistribution (transfer to boardroom) rate'}}</strong>
+			    <div class="weui-media-box__desc">
+				<div v-for="chainId in activeChains" class="weui-form-preview__item">
+				    <label class="weui-form-preview__label">{{chains_params[chainId].chainName}}</label>
+				    <span class="weui-form-preview__value">{{info_key_params[chainId]!=undefined?info_key_params[chainId].brdige_fee_rate:undefined}}</span>
+				</div>
+			    </div>
+			</div>
+			<hr>
+
+			<div :key=info_key_params_gas_fee_key>
+			<div v-for="(info,symbol) in info_key_params_gas_fee" class="weui-media-box__bd" >
+			    <strong class="weui-media-box__title">{{symbol}}{{isZh?' 目标链矿工费':' Target Chain Gas Fee'}}</strong>
+			    <div class="weui-media-box__desc">
+				<div v-for="(fee_info,chainId) in info" class="weui-form-preview__item">
+				    <label class="weui-form-preview__label">{{chains_params[chainId].chainName}}</label>
+				    <span class="weui-form-preview__value">{{toNumber(fee_info.gas_fee,fee_info.decimals)}}&nbsp;{{symbol}}</span>
+				</div>
+			    </div>
+			</div>
+			</div>
+			<hr>
+
+		      </div>
+		    </div>
+		    <div class="weui-panel__ft"></div>
+		</div> <!-- info_keyparams-->
+
+		<!-- info_statics -->
+		<div class="weui-tab__panel info_panel js_show" id="info_statics" style="display:none">
+		    <div class="weui-panel__bd">
+		      <div class="weui-form-preview">
+			<h1>{{isZh?'跨链数据':'Bridge Data'}}</h1>
+			<div v-for="chainId in activeChains" class="weui-media-box__bd">
+			    <strong class="weui-media-box__title">{{chains_params[chainId].chainName}}</strong>
+			    <table border="1">
+			        <thead>
+			            <tr>
+					<th>{{isZh?'代币':'Token'}}</th>
+					<th>{{isZh?'跨链转入':'Bridge In'}}</th>
+					<th>{{isZh?'跨链转出':'Bridge Out'}}</th>
+					<th>{{isZh?'净流出':'Net Outflow'}}</th>
+				    </tr>
+			        </thead>
+				<tbody :key="info_statics_sheet_key">
+				    <tr v-for="pool in info_statics_sheet[chainId]">
+				        <td>{{pool[0]}}</td>
+				        <td>{{toNumber(pool[2]._receivable,pool[1])}}</td>
+				        <td>{{toNumber(pool[2]._prepayment,pool[1])}}</td>
+					<td>{{toNumber(pool[2]._prepayment,pool[1])-toNumber(pool[2]._receivable,pool[1])}}</td>
+				    </tr>
+				</tbody>
+			    </table>
+			</div>
+			<hr>
+
+			<h1>{{isZh?'收益数据':'Income Data'}}</h1>
+			<div v-for="chainId in activeChains" class="weui-media-box__bd">
+			    <strong class="weui-media-box__title">{{chains_params[chainId].chainName}}</strong>
+			    <table border="1">
+			        <thead>
+			            <tr>
+					<th>{{isZh?'代币':'Token'}}</th>
+					<th>{{isZh?'机枪池收益':'GunPool Income'}}</th>
+					<th>{{isZh?'机枪池分红':'GunPool Dividends'}}</th>
+					<th>{{isZh?'跨链桥收益':'Bridge Income'}}</th>
+					<th>{{isZh?'跨链桥分红':'Bridge Dividends'}}</th>
+				    </tr>
+			        </thead>
+				<tbody :key="info_statics_sheet_key">
+				    <tr v-for="pool in pools[chainId]">
+				        <td>{{pool.symbol}}</td>
+				        <td>{{toNumber(pool.total_invest_income,pool.token_decimals)}}</td>
+				        <td>{{toNumber(pool.total_invest_to_board,pool.token_decimals)}}</td>
+				        <td>{{toNumber(pool.total_bridge_income,pool.token_decimals)}}</td>
+				        <td>{{toNumber(pool.total_bridge_to_board,pool.token_decimals)}}</td>
+				    </tr>
+				</tbody>
+			    </table>
+			</div>
+			<hr>
+
+			<h1>{{isZh?'平台币CBT流通数据':'CBT (CubeBridge Token) Data'}}</h1>
+			<div class="weui-media-box__bd">
+			    <table border="1">
+			        <thead>
+			            <tr>
+					<th>{{isZh?'公链':'Chain'}}</th>
+					<th>{{isZh?'发行量':'Total Supply'}}</th>
+					<th>{{isZh?'挖出量':'Total Mined'}}</th>
+					<th>{{isZh?'流通量':'Total Circulated'}}</th>
+				    </tr>
+			        </thead>
+				<tbody :key="info_statics_supply_key">
+				    <tr v-for="(info,chainId) in info_statics_supply">
+				        <td>{{chains_params[chainId].chainName}}</td>
+				        <td>{{toNumber(info.total_supply,info.decimals)}}</td>
+				        <td>{{toNumber(info.total_reward,info.decimals)}}</td>
+				        <td>{{toNumber(info.total_circulated,info.decimals)}}</td>
+				    </tr>
+				    <tr>
+				        <td>Sum</td>
+				        <td>{{toNumber(info_statics_supply_sum.total_supply,info_statics_supply_sum.decimals)}}</td>
+				        <td>{{toNumber(info_statics_supply_sum.total_reward,info_statics_supply_sum.decimals)}}</td>
+				        <td>{{toNumber(info_statics_supply_sum.total_circulated,info_statics_supply_sum.decimals)}}</td>
+				    </tr>
+				</tbody>
+			    </table>
+			</div>
+			<hr>
+
+
+		      </div>
+		    </div>
+		    <div class="weui-panel__ft"></div>
+		</div> <!-- info_statics -->
+
+		<!-- info_guide -->
+		<div class="weui-tab__panel info_panel js_show" id="info_guide" style="display:none">
+		    <div class="weui-panel__bd">
+			<article class="weui-article">
+			    <section>
+			    <h1>Guide</h1>
+			    </section>
+
+			</article>
+		    </div>
+		    <div class="weui-panel__ft"></div>
+		</div> <!-- info_guide -->
+
+		<!-- info_faq -->
+		<div class="weui-tab__panel info_panel js_show" id="info_faq" style="display:none">
+		    <div class="weui-panel__bd">
+			<article class="weui-article">
+			    <section>
+			    <h1>FAQ</h1>
+			    </section>
+
+			</article>
+		    </div>
+		    <div class="weui-panel__ft"></div>
+		</div> <!-- info_faq -->
+
+	      </div>
+	    </div>
+          </div>
+        </div>
+      </div>
+
+
+
+      <script type="text/javascript" class="navbar js_show">
+        $(function(){
+          $('.weui-navbar__item').on('click', function () {
+            $(this).attr('aria-selected','true').addClass('weui-bar__item_on');
+            $(this).siblings('.weui-bar__item_on').removeClass('weui-bar__item_on').attr('aria-selected','false');
+            var panelId = '#' + $(this).attr('aria-controls');
+            $(panelId).css('display','block');
+            $(panelId).siblings('.weui-tab__panel').css('display','none');
+          });
+        });
+
+        $(function(){
+          $('#tab1').on('click',function(){
+	    updateHome();
+          });
+	  $('#tab6').on('click',function(){
+	    updateInfoData();
+          });
+        });
+
+	$(function(){
+          $('.info_left').on('click',function(){
+            $(this).removeClass('weui-btn_disabled');
+            $(this).siblings('.info_left').addClass('weui-btn_disabled');
+            var panelId = '#' + $(this).attr('aria-controls');
+            $(panelId).css('display','block');
+            $(panelId).siblings('.info_panel').css('display','none');
+          });
+        });
+
+      </script>
+
+
+      <div class="weui-footer weui-footer_fixed-bottom">
+        <p class="weui-footer__links">
+          <a target="_blank" href="https://twitter.com/cube_bridge" class="weui-footer__link weui-wa-hotarea">
+	    <img src="./images/link/twitter.svg" width="24px" height="24px">
+	  </a>
+          <a target="_blank" href="https://t.me/CubeBridgeChannel" class="weui-footer__link weui-wa-hotarea">
+	    <img src="./images/link/telegram.svg" width="24px" height="24px">
+	  </a>
+        </p>
+        <p class="weui-footer__text">Copyright © 2021-2025 cubebridge.io</p>
+      </div>
+
+    </div>
+
+
+    <div id="dialogs">
+
+      <div class="js_dialog" aria-labelledby="js_title1" role="dialog" aria-modal="false" aria-hidden="true" id="historyDialog" style="opacity: 1; display: none;">
+        <div id="mask1" class="weui-mask" wah-hotarea="click"></div>
+        <div id="js_dialog_1" class="weui-half-screen-dialog weui-half-screen-dialog_large">
+          <div class="weui-half-screen-dialog__hd">
+            <div class="weui-half-screen-dialog__hd__side">
+              <button id="close1" class="weui-icon-btn weui-wa-hotarea close1" wah-hotarea="click">关闭<i class="weui-icon-close-thin"></i></button>
+            </div>
+            <div class="weui-half-screen-dialog__hd__main">
+              <strong class="weui-half-screen-dialog__title lang-zh" id="js_title1">历史记录</strong>
+              <strong class="weui-half-screen-dialog__title lang-en" id="js_title1">history</strong>
+              <!--<span class="weui-half-screen-dialog__subtitle">副标题</span> -->
+            </div>
+          </div>
+          <div class="weui-dialog__bd" style="padding-left:0px">
+	    <div class="weui-panel weui-panel_access" style="padding-left:0px">
+		<div class="weui-panel__hd">{{isZh?'源:&nbsp;&nbsp;':'From:&nbsp;&nbsp;'}}{{bridge_from_chain>0?chains_params[bridge_from_chain].chainName:""}}&nbsp;&nbsp;{{bridge_selected_pool.symbol}}</div>
+		<div class="weui-panel__bd" style="padding-left:0px">
+
+		    <div v-for="(record,index) in history_cur_data" aria-labelledby="js_p1m1_bd" class="weui-media-box weui-media-box_appmsg">
+			<div aria-hidden="true" class="weui-media-box__hd">
+			  <img class="weui-media-box__thumb" style="width:50px" :src="'./images/chain_logo/'+record[1].to_chain_id+'.png'" alt="">
+			</div>
+			<div aria-hidden="true" id="js_p1m1_bd" class="weui-media-box__bd">
+			  <strong class="weui-media-box__title">{{toNumber(record[1].amount,record[1].decimals)}}</strong>
+			  <strong class="weui-media-box__title">{{record[1].to}}</strong>
+			  <div class="weui-media-box__desc">
+			    <div class="weui-form-preview__item">
+			      <label class="weui-form-preview__label lang-en">nonce</label>
+			      <label class="weui-form-preview__label lang-zh">序号</label>
+			      <span class="weui-form-preview__value">{{record[1].nonce}}</span>
+			    </div>
+			    <div class="weui-form-preview__item">
+			      <label class="weui-form-preview__label lang-en">block</label>
+			      <label class="weui-form-preview__label lang-zh">区块</label>
+			      <span class="weui-form-preview__value">{{record[1].block_number}}</span>
+			    </div>
+			    <div class="weui-form-preview__item">
+			      <label class="weui-form-preview__label lang-en">state</label>
+			      <label class="weui-form-preview__label lang-zh">状态</label>
+			      <span class="weui-form-preview__value">{{STATE[getState(record,index,history_infos)]}}</span>
+			    </div>
+			    <div class="weui-form-preview__item">
+			      <label class="weui-form-preview__label lang-en">Confirms</label>
+			      <label class="weui-form-preview__label lang-zh">确认数</label>
+			      <span class="weui-form-preview__value">{{history_infos[index]!=undefined?history_infos[index].confirms:0}}/12</span>
+			    </div>
+			    <div class="weui-form-preview__item">
+			      <label class="weui-form-preview__label lang-en">signcount</label>
+			      <label class="weui-form-preview__label lang-zh">签名</label>
+			      <span class="weui-form-preview__value">{{history_infos[index]!=undefined?history_infos[index].signs.length:0}}/1</span>
+			    </div>
+			  </div>
+			  <!--
+			  <ul class="weui-media-box__info" aria-hidden="true" style="">
+			    <li class="weui-media-box__info__meta" aria-hidden="true" id="js_p4m1_hash">{{record[0]}}</li>
+			  </ul>
+			  -->
+			  <ul class="weui-media-box__info" aria-hidden="true" style="">
+			    <li class="weui-media-box__info__meta" aria-hidden="true" id="js_p4m1_time">{{history_infos[index]!=undefined?toDatetime(history_infos[index].timestamp):""}}</li>
+			  </ul>
+			</div>
+			<div aria-hidden="true" class="weui-media-box__ft" width="300px">
+			  <div class="button-sp-area" >
+			    <a v-if="getState(record,index,history_infos)==0" :href="'javascript:onBridgeWithdraw('+index+')'" role="button" class="weui-btn weui-btn_mini weui-btn_primary weui-wa-hotarea ">{{isZh?'提取':'Withdraw'}}</a>
+			    <div style="margin: 3px;"></div>
+			    <a v-if="getState(record,index,history_infos)==0" :href="'javascript:onBridgeCancel('+index+')'" role="button" class="weui-btn weui-btn_mini weui-btn_primary weui-wa-hotarea ">{{isZh?'撤消':'Cancel'}}</a>
+			    <div style="margin: 3px;"></div>
+			    <a v-if="getState(record,index,history_infos)==3" :href="'javascript:onBridgeFallback('+index+')'" role="button" class="weui-btn weui-btn_mini weui-btn_primary weui-wa-hotarea ">{{isZh?'退款':'Refund'}}</a>
+			  </div>
+			</div>
+		    </div>
+
+
+
+		</div>
+		<div class="weui-panel__ft">
+		    <a v-if="history_max_page>1" href="javascript:onHistoryPagePicker()" class="weui-cell weui-cell_active weui-cell_access weui-cell_link">
+			<span class="weui-cell__bd">{{isZh?'更多':'more'}}</span>
+			<span class="weui-cell__ft"></span>
+		    </a>
+		</div>
+	    </div>
+
+          </div>
+          <div class="weui-half-screen-dialog__ft">
+            <div class="weui-half-screen-dialog__btn-area">
+              <a href="javascript:" class="weui-btn weui-btn_mini weui-btn_default close1 lang-zh">关闭</a>
+              <a href="javascript:" class="weui-btn weui-btn_mini weui-btn_default close1 lang-en">close</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+	<!-- amountDialog -->
+      <div class="js_dialog" role="dialog" aria-hidden="true" aria-modal="false" aria-labelledby="js_title1" id="amountDialog" style="opacity: 1; display: none;">
+        <div id="gun_mask" class="weui-mask"></div>
+        <div class="weui-dialog">
+          <div class="weui-dialog__hd"><strong class="weui-dialog__btn_default" id="js_title1">{{chains_params[gun_selected_chain]["chainName"]}}</strong></div>
+          <div class="weui-form" style="padding:10px">
+            <div class="weui-cells__group weui-cells__group_form">
+              <div class="weui-cells__title weui-dialog__btn_default">{{isZh?'存入 ':'Deposit '}}{{gun_pool.length > 0?gun_pool[gun_selected_index].symbol:''}}</div>
+              <div class="weui-cells weui-cells_form">
+                <label for="js_input1" class="weui-cell weui-cell_active">
+                  <div class="weui-cell__hd"><span class="weui-label">{{isZh?'数量':'Amount'}}</span></div>
+                  <div class="weui-cell__bd">
+                    <input id="gun_input_amount" class="weui-input" min="0" :max="gun_pool.length > 0?toNumber(gun_selected_token_balance,gun_pool[gun_selected_index].token_decimals):0" :placeholder="isZh?'填写存入的数量':'Amount to deposit'">
+                  </div>
+                  <div class="weui-cell__ft"> <i class="weui-icon-warn"></i> </div>
+                </label>
+                <div class="weui-cells__title" style="text-align: left;">{{isZh?'钱包余额: ':'Balance: '}}<span class="db_s" db_t="gun_input_amount">{{gun_pool.length > 0?toNumber(gun_selected_token_balance,gun_pool[gun_selected_index].token_decimals):0}}</span></div>
+              </div>
+            </div>
+            <div class="weui-dialog__ft">
+              <a role="button" href="javascript:" class="weui-dialog__btn weui-dialog__btn_default DialogBtnClose">{{isZh?'取消':'Cancel'}}</a>
+              <a role="button" href="javascript:onGunAmountBtnOK()" class="weui-dialog__btn weui-dialog__btn_primary amountDialogBtnOK">{{isZh?'确定':'Confirm'}}</a>
+            </div>
+          </div>
+        </div>
+      </div> <!-- amountDialog -->
+
+	<!-- liquidityDialog -->
+      <div class="js_dialog" role="dialog" aria-hidden="true" aria-modal="false" aria-labelledby="js_title1" id="liquidityDialog" style="opacity: 1; display: none;">
+        <div id="gun_liquidity_mask" class="weui-mask"></div>
+        <div class="weui-dialog">
+          <div class="weui-dialog__hd"><strong class="weui-dialog__btn_default" id="js_title1">{{chains_params[gun_selected_chain]["chainName"]}}</strong></div>
+          <div class="weui-form" style="padding:10px">
+            <div class="weui-cells__group weui-cells__group_form">
+              <div class="weui-cells__title weui-dialog__btn_default">{{isZh?'取出 ':'Withdraw '}}{{gun_pool.length > 0?gun_pool[gun_selected_index].symbol:''}}</div>
+              <div class="weui-cells weui-cells_form">
+                <label for="js_input1" class="weui-cell weui-cell_active">
+                  <div class="weui-cell__hd"><div class="weui-label">{{isZh?'凭证数量':'Liquidity\nAmount'}}</div></div>
+                  <div class="weui-cell__bd">
+                    <input id="gun_input_liquidity" class="weui-input" min="0" :max="gun_pool.length > 0?toNumber(gun_selected_token_balance,gun_pool[gun_selected_index].liquidity_decimals):0" :placeholder="isZh?'填写凭证的数量':'Liquidity Amount to redeem'" onchange="set_gun_liquidity_amount()">
+                  </div>
+                  <div class="weui-cell__ft"> 
+		    <i class="weui-icon-warn"></i> 
+		  </div>
+                </label>
+                <div class="weui-cells__title" style="text-align: left;">{{isZh?'凭证余额: ':'Liquidity Balance: '}}<span class="db_s" db_t="gun_input_liquidity">{{gun_pool.length > 0?toNumber(gun_selected_token_balance,gun_pool[gun_selected_index].liquidity_decimals):0}}</span>
+		</div>
+                <div class="weui-cells__title" style="text-align: left;">
+		    <span>
+		    ≈
+		    {{liquidityToTokenAmount(gun_selected_token_balance)}}&nbsp;
+		    {{gun_pool.length > 0?gun_pool[gun_selected_index].symbol:""}}
+		    </span>
+		</div>
+                <div class="weui-cells__title" style="text-align: left;">
+		    <span>
+		    {{isZh?'取款限额:&nbsp;':'Withdraw Limit:&nbsp;'}}
+		    {{gun_pool_infos.length > 0?toNumber(gun_pool_infos[gun_selected_index].assets,gun_pool[gun_selected_index].token_decimals):0}}&nbsp;
+		    {{gun_pool.length > 0?gun_pool[gun_selected_index].symbol:""}}
+		    </span>
+		</div>
+              </div>
+            </div>
+            <div class="weui-dialog__ft">
+              <a role="button" href="javascript:" class="weui-dialog__btn weui-dialog__btn_default DialogBtnClose">{{isZh?'取消':'Cancel'}}</a>
+              <a role="button" href="javascript:onGunLiquidityBtnOK()" class="weui-dialog__btn weui-dialog__btn_primary amountDialogBtnOK">{{isZh?'确定':'Confirm'}}</a>
+            </div>
+          </div>
+        </div>
+      </div> <!-- liquidityDialog -->
+
+
+	<!-- customAddressDialog -->
+      <div class="js_dialog" role="dialog" aria-hidden="true" aria-modal="false" aria-labelledby="js_title1" id="customAddressDialog" style="opacity: 1; display: none;">
+        <div id="bridge_custom_address_mask" class="weui-mask"></div>
+        <div class="weui-dialog">
+          <div class="weui-dialog__hd"><strong class="weui-dialog__btn_default" id="js_title1">{{isZh?'自定义目标地址':'Custom Target Address'}}</strong></div>
+          <div class="weui-form" style="padding:10px">
+            <div class="weui-cells__group weui-cells__group_form">
+              <div class="weui-cells__title weui-dialog__btn_default"></div>
+              <div class="weui-cells weui-cells_form">
+                <label for="js_input1" class="weui-cell weui-cell_active">
+                  <div class="weui-cell__hd"><div class="weui-label">{{isZh?'地址':'Address'}}</div></div>
+                  <div class="weui-cell__bd">
+                    <input id="bridge_custom_address" class="weui-input" :placeholder="isZh?'填写目标地址':'Target Address'">
+                  </div>
+                  <div class="weui-cell__ft"> 
+		    <i class="weui-icon-warn"></i> 
+		  </div>
+                </label>
+              </div>
+            </div>
+            <div class="weui-dialog__ft">
+              <a role="button" href="javascript:" class="weui-dialog__btn weui-dialog__btn_default DialogBtnClose">{{isZh?'取消':'Cancel'}}</a>
+              <a role="button" href="javascript:onBridgeCustomAddressBtnOK()" class="weui-dialog__btn weui-dialog__btn_primary amountDialogBtnOK">{{isZh?'确定':'Confirm'}}</a>
+            </div>
+          </div>
+        </div>
+      </div> <!-- customDialog -->
+
+
+	<!-- bridgePreviewDialog -->
+      <div class="js_dialog" role="dialog" aria-hidden="true" aria-modal="false" aria-labelledby="js_title1" id="bridgePreviewDialog" style="opacity: 1; display: none;">
+	<div id="birdge_mask" class="weui-mask"></div>
+	<div class="weui-dialog">
+	    <div class="weui-dialog__hd">
+		<strong class="weui-dialog__btn_default" id="js_title1">{{isZh?'转账预览':'Transfer Preview'}}</strong>
+		<br>
+		<strong class="weui-dialog__btn_default" id="js_title1">{{bridge_selected_pool.symbol}}{{bridge_is_liquidity?isZh?'&nbsp;存款凭证':'&nbsp;Liquidity':""}}</strong>
+	    </div>
+	    <div class="weui-dialog__bd">
+		<div class="weui-form-preview" style="padding:10px">
+		    <div role="option" class="weui-form-preview__hd">
+			<div class="weui-form-preview__item">
+			    <label class="weui-form-preview__label">{{isZh?'数量':'Amount'}}</label>
+			    <em class="weui-form-preview__value">{{bridge_is_liquidity?toNumber(bridge_form_amount_bn,bridge_selected_pool.liquidity_decimals):toNumber(bridge_form_amount_bn,bridge_selected_pool.token_decimals)}}</em>
+			</div>
+		    </div>
+		    <div role="option" aria-labelledby="p1 js_a11y_comma p2 js_a11y_comma p3" class="weui-form-preview__bd">
+			<div class="weui-form-preview__item">
+			    <label class="weui-form-preview__label">{{isZh?'源链':'From Chain'}}</label>
+			    <span class="weui-form-preview__value">{{bridge_from_chain>0?chains_params[bridge_from_chain].chainName:""}}</span>
+			</div>
+			<div class="weui-form-preview__item">
+			    <label class="weui-form-preview__label">{{isZh?'目标链':'Target Chain'}}</label>
+			    <span class="weui-form-preview__value">{{bridge_to_chain?chains_params[bridge_to_chain].chainName:""}}</span>
+			</div>
+			<div class="weui-form-preview__item">
+			    <label class="weui-form-preview__label">{{isZh?'目标地址':'Target Address'}}</label>
+			    <span class="weui-form-preview__value">{{bridge_to_address}}</span>
+			</div>
+
+		    </div>
+
+		</div>
+	    </div>
+	    <div class="weui-dialog__ft">
+		<a role="button" href="javascript:" class="weui-dialog__btn weui-dialog__btn_default DialogBtnClose">{{isZh?'取消':'Cancel'}}</a>
+		<a role="button" href="javascript:onBridgePreviewBtnOK()" class="weui-dialog__btn weui-dialog__btn_primary bridgePreviewBtnOK">{{isZh?'确定':'Confirm'}}</a>
+	    </div>
+	</div>
+      </div> <!-- bridgePreviewDialog -->
+
+	<!-- bridgeWithdrawDialog-->
+      <div class="js_dialog" role="dialog" aria-hidden="true" aria-modal="false" aria-labelledby="js_title1" id="bridgeWithdrawDialog" style="opacity: 1; display: none;">
+        <div id="bridge_withdraw_method_mask" class="weui-mask"></div>
+        <div class="weui-dialog">
+          <div class="weui-dialog__hd"><strong class="weui-dialog__btn_default" id="js_title1">{{isZh?'选择提取方式':'Choose withdraw method'}}</strong></div>
+          <div class="weui-form" style="padding:10px">
+            <div class="weui-cells__group weui-cells__group_form">
+              <div class="weui-cells weui-cells_radio">
+		<label class="weui-cell weui-cell_active weui-check__label">
+		    <div class="weui-cell__bd">
+			<p>{{isZh?'提取代币':'Withdraw Token'}}</p>
+		    </div>
+		    <div class="weui-cell__ft">
+			<input type="radio" class="weui-check" name="radio1" id="x11" value="0" checked="checked">
+			<span class="weui-icon-checked"></span>
+		    </div>
+		</label>
+		<label class="weui-cell weui-cell_active weui-check__label">
+		    <div class="weui-cell__bd">
+			<p>{{isZh?'提取凭证':'Withdraw cToken'}}</p>
+		    </div>
+		    <div class="weui-cell__ft">
+			<input type="radio" class="weui-check" name="radio1" id="x12" value="1">
+			<span class="weui-icon-checked"></span>
+		    </div>
+		</label>
+		<label class="weui-cell weui-cell_active weui-check__label" style="display:none">
+		    <div class="weui-cell__bd">
+			<p>{{isZh?'兑换矿工费':'Swap for gas'}}</p>
+		    </div>
+		    <div class="weui-cell__ft">
+			<input type="radio" class="weui-check" name="radio1" id="x13" value="2">
+			<span class="weui-icon-checked"></span>
+		    </div>
+		</label>
+              </div>
+            </div>
+            <div class="weui-dialog__ft">
+              <a role="button" href="javascript:" class="weui-dialog__btn weui-dialog__btn_default DialogBtnClose">{{isZh?'取消':'Cancel'}}</a>
+              <a role="button" href="javascript:bridgeWithdrawMy()" class="weui-dialog__btn weui-dialog__btn_primary amountDialogBtnOK" title="利用自己的目标链钱包地址发起提取请求，要求钱包地址有gas费">{{isZh?'自己提取':'Withdraw myself'}}</a>
+              <a role="button" href="javascript:bridgeWithdrawProxy()" class="weui-dialog__btn weui-dialog__btn_primary amountDialogBtnOK" title="利用系统代理完成提取请求，矿工费从转账金额中扣除">{{isZh?'代理提取':'withdraw by proxy'}}</a>
+            </div>
+          </div>
+        </div>
+      </div> <!-- bridgeWithdrawDialog -->
+
+
+
+      <!-- miningDepositDialog -->
+      <div class="js_dialog" role="dialog" aria-hidden="true" aria-modal="false" aria-labelledby="js_title1" id="miningDepositDialog" style="opacity: 1; display: none;">
+        <div id="mining_deposit_mask" class="weui-mask"></div>
+        <div class="weui-dialog">
+          <div class="weui-dialog__hd"><strong class="weui-dialog__btn_default" id="js_title1">{{chains_params[mining_selected_chain]["chainName"]}}</strong></div>
+          <div class="weui-form" style="padding:10px">
+            <div class="weui-cells__group weui-cells__group_form">
+              <div class="weui-cells__title weui-dialog__btn_default">{{isZh?'质押 ':'Deposit '}}{{mining_pool.length > 0?mining_pool[mining_selected_index].lpName:''}}</div>
+              <div class="weui-cells weui-cells_form">
+                <label for="js_input1" class="weui-cell weui-cell_active">
+                  <div class="weui-cell__hd"><span class="weui-label">{{isZh?'数量':'Amount'}}</span></div>
+                  <div class="weui-cell__bd">
+                    <input id="mining_input_amount" class="weui-input" min="0" :max="mining_pool_infos.length > 0?toNumber(mining_selected_token_balance,mining_pool_infos[mining_selected_index].tvl_decimals):0" :placeholder="isZh?'填写存入的数量':'Amount to deposit'">
+                  </div>
+                  <div class="weui-cell__ft"> <i class="weui-icon-warn"></i> </div>
+                </label>
+                <div class="weui-cells__title" style="text-align: left;">{{isZh?'钱包余额: ':'Balance: '}}<span class="db_s" db_t="mining_input_amount">{{mining_pool_infos.length > 0?toNumber(mining_selected_token_balance,mining_pool_infos[mining_selected_index].tvl_decimals):0}}</span></div>
+              </div>
+            </div>
+            <div class="weui-dialog__ft">
+              <a role="button" href="javascript:" class="weui-dialog__btn weui-dialog__btn_default DialogBtnClose">{{isZh?'取消':'Cancel'}}</a>
+              <a role="button" href="javascript:onMiningDepositBtnOK()" class="weui-dialog__btn weui-dialog__btn_primary amountDialogBtnOK">{{isZh?'确定':'Confirm'}}</a>
+            </div>
+          </div>
+        </div>
+      </div> <!-- miningDepsitDialog -->
+      
+
+
+      <!-- miningWithdrawDialog -->
+      <div class="js_dialog" role="dialog" aria-hidden="true" aria-modal="false" aria-labelledby="js_title2" id="miningWithdrawDialog" style="opacity: 1; display: none;">
+        <div id="mining_withdraw_mask" class="weui-mask"></div>
+        <div class="weui-dialog">
+          <div class="weui-dialog__hd"><strong class="weui-dialog__btn_default" id="js_title2">{{chains_params[mining_selected_chain]["chainName"]}}</strong></div>
+          <div class="weui-form" style="padding:10px">
+            <div class="weui-cells__group weui-cells__group_form">
+              <div class="weui-cells__title weui-dialog__btn_default">{{isZh?'解押 ':'Withdraw '}}{{mining_pool.length > 0?mining_pool[mining_selected_index].lpName:''}}</div>
+              <div class="weui-cells weui-cells_form">
+                <label for="js_input1" class="weui-cell weui-cell_active">
+                  <div class="weui-cell__hd"><span class="weui-label">{{isZh?'数量':'Amount'}}</span></div>
+                  <div class="weui-cell__bd">
+                    <input id="mining_withdraw_amount" class="weui-input" min="0" :max="mining_pool_infos.length > 0?toNumber(mining_pool_infos[mining_selected_index].userInfo.amount,mining_pool_infos[mining_selected_index].tvl_decimals):0" :placeholder="isZh?'填写取出的数量':'Amount to withdraw'">
+                  </div>
+                  <div class="weui-cell__ft"> <i class="weui-icon-warn"></i> </div>
+                </label>
+                <div class="weui-cells__title" style="text-align: left;">{{isZh?'我的质押: ':'My Locked: '}}<span class="db_s" db_t="mining_withdraw_amount">{{mining_pool_infos.length > 0?toNumber(mining_pool_infos[mining_selected_index].userInfo.amount,mining_pool_infos[mining_selected_index].tvl_decimals):0}}</span></div>
+              </div>
+            </div>
+            <div class="weui-dialog__ft">
+              <a role="button" href="javascript:" class="weui-dialog__btn weui-dialog__btn_default DialogBtnClose">{{isZh?'取消':'Cancel'}}</a>
+              <a role="button" href="javascript:onMiningWithdrawBtnOK()" class="weui-dialog__btn weui-dialog__btn_primary amountDialogBtnOK">{{isZh?'确定':'Confirm'}}</a>
+            </div>
+          </div>
+        </div>
+      </div> <!-- miningWithdrawDialog -->
+
+      <!-- boardDepositDialog -->
+      <div class="js_dialog" role="dialog" aria-hidden="true" aria-modal="false" aria-labelledby="js_title1" id="boardDepositDialog" style="opacity: 1; display: none;">
+        <div id="board_deposit_mask" class="weui-mask"></div>
+        <div class="weui-dialog">
+          <div class="weui-dialog__hd"><strong class="weui-dialog__btn_default" id="js_title1">{{chains_params[board_selected_chain]["chainName"]}}</strong></div>
+          <div class="weui-form" style="padding:10px">
+            <div class="weui-cells__group weui-cells__group_form">
+              <div class="weui-cells__title weui-dialog__btn_default">{{isZh?'质押 ':'Deposit '}} CBT ( CubeBridge Token )</div>
+              <div class="weui-cells weui-cells_form">
+                <label for="js_input1" class="weui-cell weui-cell_active">
+                  <div class="weui-cell__hd"><span class="weui-label">{{isZh?'数量':'Amount'}}</span></div>
+                  <div class="weui-cell__bd">
+                    <input id="board_input_amount" class="weui-input" min="0" :max="toNumber(board_selected_token_balance,contracts[board_selected_chain].CubeToken.decimals)" :placeholder="isZh?'填写存入的数量':'Amount to deposit'">
+                  </div>
+                  <div class="weui-cell__ft"> <i class="weui-icon-warn"></i> </div>
+                </label>
+                <div class="weui-cells__title" style="text-align: left;">{{isZh?'钱包余额: ':'Balance: '}}<span class="db_s" db_t="board_input_amount">{{toNumber(board_selected_token_balance,contracts[board_selected_chain].CubeToken.decimals)}}</span></div>
+              </div>
+            </div>
+            <div class="weui-dialog__ft">
+              <a role="button" href="javascript:" class="weui-dialog__btn weui-dialog__btn_default DialogBtnClose">{{isZh?'取消':'Cancel'}}</a>
+              <a role="button" href="javascript:onBoardDepositBtnOK()" class="weui-dialog__btn weui-dialog__btn_primary amountDialogBtnOK">{{isZh?'确定':'Confirm'}}</a>
+            </div>
+          </div>
+        </div>
+      </div> <!-- boardDepsitDialog -->
+      
+
+
+      <!-- boardWithdrawDialog -->
+      <div class="js_dialog" role="dialog" aria-hidden="true" aria-modal="false" aria-labelledby="js_title1" id="boardWithdrawDialog" style="opacity: 1; display: none;">
+        <div id="board_withdraw_mask" class="weui-mask"></div>
+        <div class="weui-dialog">
+          <div class="weui-dialog__hd"><strong class="weui-dialog__btn_default" id="js_title1">{{chains_params[board_selected_chain]["chainName"]}}</strong></div>
+          <div class="weui-form" style="padding:10px">
+            <div class="weui-cells__group weui-cells__group_form">
+              <div class="weui-cells__title weui-dialog__btn_default">{{isZh?'解押':'Withdraw '}} CBT ( CubeBridge Token )</div>
+              <div class="weui-cells weui-cells_form">
+                <label for="js_input1" class="weui-cell weui-cell_active">
+                  <div class="weui-cell__hd"><span class="weui-label">{{isZh?'数量':'Amount'}}</span></div>
+                  <div class="weui-cell__bd">
+                    <input id="board_withdraw_amount" class="weui-input" min="0" :max="toNumber(board_user_amount,contracts[board_selected_chain].CubeToken.decimals)" :placeholder="isZh?'填写取出的数量':'Amount to withdraw'">
+                  </div>
+                  <div class="weui-cell__ft"> <i class="weui-icon-warn"></i> </div>
+                </label>
+                <div class="weui-cells__title" style="text-align: left;">{{isZh?'钱包余额: ':'Balance: '}}<span class="db_s" db_t="board_withdraw_amount">{{toNumber(board_user_amount,contracts[board_selected_chain].CubeToken.decimals)}}</span></div>
+              </div>
+            </div>
+            <div class="weui-dialog__ft">
+              <a role="button" href="javascript:" class="weui-dialog__btn weui-dialog__btn_default DialogBtnClose">{{isZh?'取消':'Cancel'}}</a>
+              <a role="button" href="javascript:onBoardWithdrawBtnOK()" class="weui-dialog__btn weui-dialog__btn_primary amountDialogBtnOK">{{isZh?'确定':'Confirm'}}</a>
+            </div>
+          </div>
+        </div>
+      </div> <!-- miningWithdrawDialog -->
+ 
+      
+
+
+    </div> <!-- dialogs -->
+
+
+    <script type="text/javascript" class="dialog js_show">
+      $(function(){
+        var $amountDialog = $('#amountDialog');
+        var $dialog1 = $('#js_dialog_1');
+	var $bridgePreviewDialog = $('#bridgePreviewDialog');
+        var $historyDialog = $('#historyDialog');
+
+        $('input').on('focus',function(){
+          $(this).parent().parent().removeClass('weui-cell_warn');
+        });
+        $('select').on('focus',function(){
+          $(this).parent().parent().removeClass('weui-cell_warn');
+        });
+        $('.DialogBtnClose').on('click', function(){
+          console.log('DialogBtnClose');
+          $(this).parents('.js_dialog').attr('aria-hidden','true').attr('aria-modal','false').removeAttr('tabindex');
+          $(this).parents('.js_dialog').fadeOut(200);
+          //$dialog1.removeClass('weui-half-screen-dialog_show');
+          setTimeout(function(){
+            //$('.').trigger('focus');
+          },300)
+        });
+        $('.db_s').on('dblclick',function(){
+          var val = this.innerText;
+          var db_t = $('#'+$(this).attr('db_t'));
+          db_t.val(val);
+        });
+
+        $('#bridge_select_from_chain').on('change',function(){
+         app.bridge_selected_pool={}; 
+         updateBridgeSelectTokenBalance(); 
+       });
+
+        $('.bridge_from_select').on('change',function(){
+         if($('#bridge_select_token').find('option:selected').text() == 'TCT' ){ // || $('#js_bridge_swap_for_gas').attr('checked')){
+           app.bridge_is_liquidity = false;
+         }
+         updateBridgeSelectTokenBalance(); 
+       });
+
+	$('.bridge_from_to').on('change',function(){
+	    updateBridgeLimit();
+	});
+
+        $('#mask1').on('click', function(){
+          $(this).parents('.js_dialog').fadeOut(200);
+          $dialog1.removeClass('weui-half-screen-dialog_show');
+        });
+        $('.close1').on('click', function(){
+          $(this).parents('.js_dialog').attr('aria-hidden','true').attr('aria-modal','false').removeAttr('tabindex');
+          $(this).parents('.js_dialog').fadeOut(200);
+          //$dialog1.removeClass('weui-half-screen-dialog_show');
+          setTimeout(function(){
+            //$('.').trigger('focus');
+          },300)
+        });
+
+        $('.showHistoryDialog').on('click', function(){
+          console.log('showHistoryDialog.onclick');
+	  updateHistory();
+          $historyDialog.fadeIn(200);
+          $dialog1.addClass('weui-half-screen-dialog_show');
+          setTimeout(function(){
+            $historyDialog.attr('aria-hidden','false');
+            $historyDialog.attr('aria-modal','true');
+            $historyDialog.attr('tabindex','0');
+            $historyDialog.trigger('focus');
+          },200)
+        });
+
+      });
+    </script>
+
+
+
+
+
+  </div>
+
+
+
+    <script>
+	init_lang();
+	init_background();
+	init_vue();
+	$('#btn_En').on('click',function(){
+	    app.lang="en";
+	});
+	$('#btn_Zh').on('click',function(){
+	    app.lang="zh";
+	});
+	{
+	    updateHome();
+	}
+	{
+	    $('#guntab0').attr('aria-selected','true');
+	    $('#guntab0').addClass('weui-bar__item_on');
+	    updateGunPool(app.gun_selected_chain);
+	}
+	{
+	    $('#miningtab0').attr('aria-selected','true');
+	    $('#miningtab0').addClass('weui-bar__item_on');
+	    updateMiningPool(app.mining_selected_chain);
+	}
+	{
+	    $('#boardtab0').attr('aria-selected','true');
+	    $('#boardtab0').addClass('weui-bar__item_on');
+	    updateBoardPool(app.board_selected_chain);
+	}
+    </script>
+
+
+
+</body>
+</html>
